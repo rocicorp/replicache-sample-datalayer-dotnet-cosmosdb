@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Azure.Cosmos;
+using Microsoft.AspNetCore.Cors;
 
 namespace todo.Controllers
 {
@@ -18,6 +19,7 @@ namespace todo.Controllers
             _configuration = configuration;
         }
 
+        [EnableCors]
         [HttpPost]
         public async Task<ActionResult<ClientViewResponse>> Get(ClientViewRequest request)
         {

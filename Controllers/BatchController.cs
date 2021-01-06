@@ -4,10 +4,8 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using Azure.Cosmos;
-using System.Text.Json.Serialization;
-using ObjectDumping;
+using Microsoft.AspNetCore.Cors;
 
 namespace todo
 {
@@ -22,6 +20,7 @@ namespace todo
             _configuration = configuration;
         }
 
+        [EnableCors]
         [HttpPost]
         [Route("/replicache-batch")]
         public async Task<IActionResult> Post(BatchRequest request)
@@ -29,7 +28,7 @@ namespace todo
             // TODO - authenticate user and get their account ID.
             // Replicache sends an auth token through the normal 'Authorization'
             // HTTP header. Provide it on the client side via the
-            // getDataLayerAuth API: https://js.replicache.dev/classes/replicache.html#getdatalayerauth
+            // getDataLayerAuth API: https://js.replicache.dev/classes/default.html#getdatalayerauth
             const String accountID = "TODO";
 
             if (request.ClientId == null || request.ClientId == "")
