@@ -3,18 +3,33 @@ using System.Text.Json.Serialization;
 
 namespace todo
 {
-    public class Todo
+    public class Todo<IDType>
     {
         [JsonPropertyName("accountID")]
         public String AccountID { get; set; }
         [JsonPropertyName("id")]
-        public String ID { get; set; }
-        [JsonPropertyName("title")]
-        public String Title { get; set; }
+        public IDType ID { get; set; }
+        [JsonPropertyName("listID")]
+        public UInt64 ListID { get; set; }
+        [JsonPropertyName("text")]
+        public String Text { get; set; }
         [JsonPropertyName("order")]
         public String Order { get; set; }
         [JsonPropertyName("complete")]
         public bool Complete { get; set; }
+
+        public static Todo<UInt64> ToNumberVersion(Todo<string> todo)
+        {
+            UInt64 id = UInt64.Parse(todo.ID.Substring("/todo/".Length));
+            return new Todo<UInt64>
+            {
+                AccountID = todo.AccountID,
+                ID = id,
+                Text = todo.Text,
+                Order = todo.Order,
+                Complete = todo.Complete,
+            };
+        }
     }
 
     public class ClientState
