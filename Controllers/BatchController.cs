@@ -4,8 +4,8 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using Azure.Cosmos;
 using Microsoft.AspNetCore.Cors;
+using System.Text.Json.Serialization;
 
 namespace todo
 {
@@ -45,81 +45,51 @@ namespace todo
             {
                 if (mutation.Id == 0)
                 {
-                    return BadRequest(String.Format("id field of mutation must be non-zero"));
+                    return BadRequest("id field of mutation must be non-zero");
                 }
 
-                var currentMutationID = await db.GetMutationID(accountID, request.ClientId);
-                var expectedMutationID = currentMutationID + 1;
-
-                if (mutation.Id > expectedMutationID)
+                var result = await ProcessMutation(db, accountID, request.ClientId, mutation);
+                if (result is BadRequestObjectResult)
                 {
-                    return BadRequest(String.Format("Mutation ID {0} is too high - next expected mutation is {1}", mutation.Id, expectedMutationID));
+                    return result;
                 }
-
-                if (mutation.Id < expectedMutationID)
+                if (result is OkObjectResult)
                 {
-                    infos.Add(new MutationInfo
+                    var value = (result as OkObjectResult).Value;
+                    if (value != null)
                     {
-                        Id = mutation.Id,
-                        Message = String.Format("Mutation ID {0} has already been processed. Skipping.", mutation.Id),
-                    });
-                    continue;
+                        infos.Add(value as MutationInfo);
+                    }
                 }
-
-                try
-                {
-                    await ProcessMutation(db.Items, accountID, mutation);
-                }
-                catch (PermanentError e)
-                {
-                    // For permanent errors, return a note to client and
-                    // continue.
-                    infos.Add(new MutationInfo
-                    {
-                        Id = mutation.Id,
-                        Message = e.Message,
-                    });
-                }
-                // Other exceptions bubble up and result in 500.
-
-                await db.SetMutationID(accountID, request.ClientId, expectedMutationID);
             }
 
             return Ok(JsonSerializer.Serialize(infos));
         }
 
-        private async Task ProcessMutation(CosmosContainer items, String accountID, Mutation mutation)
+        private async Task<IActionResult> ProcessMutation(
+            Db db,
+            string accountID,
+            string clientID,
+            Mutation mutation)
         {
-            switch (mutation.Name)
+            JsonElement result = await db.ExecuteStoredProcedure<JsonElement>(
+                accountID,
+                "spProcessMutation",
+                new dynamic[] { accountID, clientID, mutation });
+            string kind = result.GetProperty("kind").GetString();
+            if (kind == "BadRequest")
             {
-                case "createTodo":
-                    await createTodo(items, accountID, mutation.Args);
-                    break;
-                // ... etc ...
-                default:
-                    throw new PermanentError(String.Format("Unknown mutation: {0}", mutation.Name), null);
-            }
-        }
-
-        private async Task createTodo(CosmosContainer items, String accountID, JsonElement args)
-        {
-            Todo todo;
-            try
-            {
-                todo = JsonSerializer.Deserialize<Todo>(args.GetRawText());
-            }
-            catch (Exception e)
-            {
-                throw new PermanentError("Could not deserialize arguments: " + e.Message, e);
+                string message = result.GetProperty("message").GetString();
+                return BadRequest(message);
             }
 
-            if (!todo.ID.StartsWith("/todo/"))
+            var value = result.GetProperty("value");
+            if (value.ValueKind == JsonValueKind.Null)
             {
-                throw new PermanentError("Invalid id: must start with '/todo/'", null);
+                return Ok(null);
             }
-
-            todo.AccountID = accountID;
-            await items.CreateItemAsync(todo);
+            var info = MutationInfo.FromJsonElement(value);
+            return Ok(info);
         }
     }
 
@@ -131,8 +101,13 @@ namespace todo
 
     public class Mutation
     {
+        [JsonPropertyName("id")]
         public UInt64 Id { get; set; }
+
+        [JsonPropertyName("name")]
         public String Name { get; set; }
+
+        [JsonPropertyName("args")]
         public JsonElement Args { get; set; }
     }
 
@@ -143,8 +118,21 @@ namespace todo
 
     public class MutationInfo
     {
+        [JsonPropertyName("id")]
         public UInt64 Id { get; set; }
-        public String Message { get; set; }
+
+        [JsonPropertyName("error")]
+        public String Error { get; set; }
+
+        static public MutationInfo FromJsonElement(JsonElement obj)
+        {
+            // TODO(arv): Isn't there a built in way to do this?
+            return new MutationInfo
+            {
+                Id = obj.GetProperty("id").GetUInt64(),
+                Error = obj.GetProperty("error").GetString(),
+            };
+        }
     }
 
     // Error handling for a sync protocol is slightly more involved than

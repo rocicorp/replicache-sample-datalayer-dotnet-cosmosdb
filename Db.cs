@@ -29,31 +29,59 @@ namespace todo
             Items = Client.GetContainer("replicache-sample-todo", "items");
         }
 
-        public async Task<UInt64> GetMutationID(String accountID, String clientID)
+        public async Task RegisterStoredProcedures()
         {
-            var def = new QueryDefinition("SELECT * FROM c WHERE c.accountID = @accountID AND c.id = @id")
-                .WithParameter("@accountID", accountID)
-                .WithParameter("@id", GetReplicacheStateID(clientID));
-            await foreach (ClientState state in Items.GetItemQueryIterator<ClientState>(def))
+            string sharedPath = "js/shared.js";
+            string utilSource = $"\n// {sharedPath}\n{File.ReadAllText(sharedPath)}";
+            string[] ids = { "spProcessMutation", "spGetMutationID" };
+            foreach (string id in ids)
             {
-                return state.LastMutationID;
+                var props = new StoredProcedureProperties
+                {
+                    Id = id,
+                    Body = File.ReadAllText($"js/{id}.js") + "\n" + utilSource
+                };
+                try
+                {
+                    await Items.Scripts.ReplaceStoredProcedureAsync(props);
+                }
+                catch (CosmosException ex)
+                {
+                    if (ex.Status == 404)
+                    {
+                        await Items.Scripts.CreateStoredProcedureAsync(props);
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+
             }
-            return 0;
         }
 
-        public async Task SetMutationID(String accountID, String clientID, UInt64 mutationID)
+        public async Task<UInt64> GetMutationID(String accountID, String clientID)
         {
-            await Items.UpsertItemAsync(new ClientState
-            {
-                AccountID = accountID,
-                ID = GetReplicacheStateID(clientID),
-                LastMutationID = mutationID,
-            });
+            return await ExecuteStoredProcedure<UInt64>(accountID, "spGetMutationID", new dynamic[] { accountID, clientID });
         }
 
         private static String GetReplicacheStateID(String clientID)
         {
             return String.Format("/replicache-client-state/{0}", clientID);
+        }
+
+        public async Task<T> ExecuteStoredProcedure<T>(string accountID, string spName, dynamic[] args)
+        {
+            var result = await Items.Scripts.ExecuteStoredProcedureAsync<T>(
+                spName,
+                new PartitionKey(accountID),
+                args,
+                new StoredProcedureRequestOptions { EnableScriptLogging = true });
+            if (result.ScriptLog != null && result.ScriptLog != "")
+            {
+                Console.WriteLine($"{spName}: ScriptLog: {result.ScriptLog}");
+            }
+            return result.Value;
         }
     }
 }

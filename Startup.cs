@@ -1,10 +1,12 @@
 
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
+using todo;
 
 namespace TodoApi
 {
@@ -13,6 +15,9 @@ namespace TodoApi
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
+
+            var db = new Db(Configuration);
+            Task.Run(db.RegisterStoredProcedures).Wait();
         }
 
         public IConfiguration Configuration { get; }
