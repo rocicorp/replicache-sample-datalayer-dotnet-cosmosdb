@@ -31,15 +31,20 @@ namespace todo
 
         public async Task RegisterStoredProcedures()
         {
-            string sharedPath = "js/shared.js";
-            string utilSource = $"\n// {sharedPath}\n{File.ReadAllText(sharedPath)}";
+            string[] sources = { "util", "replicache", "mutators" };
+            string utilSource = "";
+            foreach (var source in sources)
+            {
+                var path = $"js/{source}.js";
+                utilSource += $"\n// {path}\n{File.ReadAllText(path)}";
+            }
             string[] ids = { "spProcessMutation", "spGetMutationID" };
             foreach (string id in ids)
             {
                 var props = new StoredProcedureProperties
                 {
                     Id = id,
-                    Body = File.ReadAllText($"js/{id}.js") + "\n" + utilSource
+                    Body = File.ReadAllText($"js/{id}.js") + "\n" + utilSource,
                 };
                 try
                 {

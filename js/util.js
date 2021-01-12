@@ -92,29 +92,3 @@ function queryDocuments(query, params = {}) {
     ),
   );
 }
-
-// Shared functions that are used by all the stored procedures.
-
-/**
- * @param {string} accountID
- * @param {string} clientID
- * @return {Promise<number>}
- */
-async function getMutationID(accountID, clientID) {
-  const value = await queryDocuments(
-    "SELECT c.lastMutationID FROM c WHERE c.id = @id AND c.accountID = @accountID",
-    {"@id": getReplicacheStateID(clientID), "@accountID": accountID},
-  );
-  if (value.length === 0) {
-    return 0;
-  }
-  return value[0].lastMutationID;
-}
-
-/**
- * @param {string} clientID
- * @return {string}
- */
-function getReplicacheStateID(clientID) {
-  return `/replicache-client-state/${clientID}`;
-}
