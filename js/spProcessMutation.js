@@ -74,6 +74,9 @@ async function processMutation(accountID, clientID, mutation) {
       case "updateTodo":
         await updateTodo(accountID, mutation.args);
         break;
+      case "deleteTodo":
+        await deleteTodo(accountID, mutation.args);
+        break;
       default:
         throw new PermanentError(`Unknown mutation: ${mutation.name}`);
     }
@@ -158,6 +161,17 @@ async function updateTodo(accountID, input) {
   }
 
   await upsertDocument(todo);
+}
+
+/**
+ * @param {string} accountID
+ * @param {{id: number}} args
+ */
+async function deleteTodo(accountID, args) {
+  const todo = await getTodo(accountID, args.id);
+  if (todo) {
+    await deleteDocument(todo._self);
+  }
 }
 
 /**
