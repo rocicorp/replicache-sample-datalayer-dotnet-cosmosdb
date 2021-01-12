@@ -71,6 +71,9 @@ async function processMutation(accountID, clientID, mutation) {
       case "createTodo":
         await createTodo(accountID, mutation.args);
         break;
+      case "updateTodo":
+        await updateTodo(accountID, mutation.args);
+        break;
       default:
         throw new PermanentError(`Unknown mutation: ${mutation.name}`);
     }
@@ -118,6 +121,55 @@ async function createTodo(accountID, todo) {
 
   todo.accountID = accountID;
   await createDocument(todo);
+}
+
+/**
+ * @typedef {{
+ *   id: number;
+ *   text: string;
+ *   order: string;
+ *   complete: boolean;
+ * }} UpdateInput
+ */
+
+/**
+ * @param {string} accountID
+ * @param {UpdateInput} input
+ */
+async function updateTodo(accountID, input) {
+  const todo = await getTodo(accountID, input.id);
+
+  if (!todo) {
+    throw new PermanentError("specified todo not found");
+  }
+
+  // if (todo.ownerUserID !== userID) {
+  // 	return new PermanentError(("access unauthorized")
+  // }
+
+  if (input.text !== undefined) {
+    todo.text = input.text;
+  }
+  if (input.order !== undefined) {
+    todo.order = input.order;
+  }
+  if (input.complete !== undefined) {
+    todo.complete = input.complete;
+  }
+
+  await upsertDocument(todo);
+}
+
+/**
+ * @param {string} accountID
+ * @param {number} id
+ */
+async function getTodo(accountID, id) {
+  const todos = await queryDocuments(
+    "SELECT * FROM c WHERE c.id = @id AND @accountID = @accountID",
+    {"@id": `/todo/${id}`, "@accountID": accountID},
+  );
+  return todos[0];
 }
 
 /**
