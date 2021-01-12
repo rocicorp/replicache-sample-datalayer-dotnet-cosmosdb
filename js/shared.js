@@ -65,6 +65,14 @@ function upsertDocument(doc) {
 }
 
 /**
+ * @param {string} documentLink
+ * @return {Promise<any>}
+ */
+function deleteDocument(documentLink) {
+  return toPromise((callback) => __.deleteDocument(documentLink, callback));
+}
+
+/**
  * @param {string} query
  * @param {{[key: string]: any}} params
  * @return {Promise<any[]>}
