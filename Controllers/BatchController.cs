@@ -23,7 +23,7 @@ namespace todo
         [EnableCors]
         [HttpPost]
         [Route("/replicache-batch")]
-        public async Task<IActionResult> Post(BatchRequest request)
+        public async Task<ActionResult<List<MutationInfo>>> Post(BatchRequest request)
         {
             // TODO - authenticate user and get their account ID.
             // Replicache sends an auth token through the normal 'Authorization'
@@ -51,19 +51,19 @@ namespace todo
                 var result = await ProcessMutation(db, accountID, request.ClientId, mutation);
                 if (result is BadRequestObjectResult)
                 {
-                    return result;
+                    return result as BadRequestObjectResult;
                 }
                 if (result is OkObjectResult)
                 {
-                    var value = (result as OkObjectResult).Value;
+                    var value = (result as OkObjectResult).Value as MutationInfo;
                     if (value != null)
                     {
-                        infos.Add(value as MutationInfo);
+                        infos.Add(value);
                     }
                 }
             }
 
-            return Ok(JsonSerializer.Serialize(infos));
+            return Ok(infos);
         }
 
         private async Task<IActionResult> ProcessMutation(

@@ -138,7 +138,10 @@ async function createTodo(accountID, todo) {
   // CosmosDB shares the id space bewtween the `todo` and the
   // `replicache-client-state` docs.
   /** @type {CosmosTodo} */
-  const cosmosTodo = {...todo, id: toCosmosID(todo.id), accountID};
+  const cosmosTodo = Object.assign({}, todo, {
+    id: toCosmosID(todo.id),
+    accountID,
+  });
 
   await createDocument(cosmosTodo);
 }
