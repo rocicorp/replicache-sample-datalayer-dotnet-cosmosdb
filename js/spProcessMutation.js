@@ -97,20 +97,38 @@ async function processMutation(accountID, clientID, mutation) {
 }
 
 /**
- * @template Id
  * @typedef {{
- *   accountID: string;
- *   id: Id;
  *   listID: number;
  *   text: string;
  *   order: string;
  *   complete: boolean;
+ * }} TodoBase
+ */
+
+/**
+ * @typedef {TodoBase & {
+ *   id: number;
  * }} Todo
  */
 
 /**
+ * @typedef {TodoBase & {
+ *   accountID: string;
+ *   id: string;
+ * }} CosmosTodo
+ */
+
+/**
+ * @param {number} id
+ * @return {string}
+ */
+function toCosmosID(id) {
+  return `/todo/${id}`;
+}
+
+/**
  * @param {string} accountID
- * @param {Todo<number>} todo
+ * @param {Todo} todo
  */
 async function createTodo(accountID, todo) {
   if (typeof todo.id !== "number") {
@@ -119,11 +137,10 @@ async function createTodo(accountID, todo) {
 
   // CosmosDB shares the id space bewtween the `todo` and the
   // `replicache-client-state` docs.
-  // @ts-ignore Should really be a  type cast but it is not supported in js mode (?).
-  todo.id = `/todo/${todo.id}`;
+  /** @type {CosmosTodo} */
+  const cosmosTodo = {...todo, id: toCosmosID(todo.id), accountID};
 
-  todo.accountID = accountID;
-  await createDocument(todo);
+  await createDocument(cosmosTodo);
 }
 
 /**
@@ -181,7 +198,7 @@ async function deleteTodo(accountID, args) {
 async function getTodo(accountID, id) {
   const todos = await queryDocuments(
     "SELECT * FROM c WHERE c.id = @id AND @accountID = @accountID",
-    {"@id": `/todo/${id}`, "@accountID": accountID},
+    {"@id": toCosmosID(id), "@accountID": accountID},
   );
   return todos[0];
 }

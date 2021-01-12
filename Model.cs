@@ -3,33 +3,44 @@ using System.Text.Json.Serialization;
 
 namespace todo
 {
-    public class Todo<IDType>
+    public class TodoBase
     {
-        [JsonPropertyName("accountID")]
-        public String AccountID { get; set; }
-        [JsonPropertyName("id")]
-        public IDType ID { get; set; }
         [JsonPropertyName("listID")]
         public UInt64 ListID { get; set; }
         [JsonPropertyName("text")]
-        public String Text { get; set; }
+        public string Text { get; set; }
         [JsonPropertyName("order")]
-        public String Order { get; set; }
+        public string Order { get; set; }
         [JsonPropertyName("complete")]
         public bool Complete { get; set; }
+    }
 
-        public static Todo<UInt64> ToNumberVersion(Todo<string> todo)
+    // Inside Cosmos the ID of a todo has the shape `/todo/123456` and it also
+    // has an `AccountID`.
+    public class CosmosTodo : TodoBase
+    {
+        [JsonPropertyName("accountID")]
+        public string AccountID { get; set; }
+        [JsonPropertyName("id")]
+        public string ID { get; set; }
+
+        public Todo ToTodo()
         {
-            UInt64 id = UInt64.Parse(todo.ID.Substring("/todo/".Length));
-            return new Todo<UInt64>
+            return new Todo
             {
-                AccountID = todo.AccountID,
-                ID = id,
-                Text = todo.Text,
-                Order = todo.Order,
-                Complete = todo.Complete,
+                ID = UInt64.Parse(ID.Substring("/todo/".Length)),
+                ListID = ListID,
+                Text = Text,
+                Order = Order,
+                Complete = Complete,
             };
         }
+    }
+
+    public class Todo : TodoBase
+    {
+        [JsonPropertyName("id")]
+        public UInt64 ID { get; set; }
     }
 
     public class ClientState
@@ -38,10 +49,11 @@ namespace todo
         // partition with other account data, otherwise ordering guarantees
         // aren't upheld by CosmosDB.
         [JsonPropertyName("accountID")]
-        public String AccountID { get; set; }
+        public string AccountID { get; set; }
         [JsonPropertyName("id")]
-        public String ID { get; set; }
+        public string ID { get; set; }
         [JsonPropertyName("lastMutationID")]
         public UInt64 LastMutationID { get; set; }
     }
+
 }
