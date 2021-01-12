@@ -38,11 +38,11 @@ namespace todo.Controllers
             var response = new ClientViewResponse
             {
                 LastMutationID = mutationID,
-                ClientView = new Dictionary<string, Todo<UInt64>>(),
+                ClientView = new Dictionary<string, Todo>(),
             };
-            await foreach (var todo in db.Items.GetItemQueryIterator<Todo<string>>(def))
+            await foreach (var todo in db.Items.GetItemQueryIterator<CosmosTodo>(def))
             {
-                response.ClientView.Add(todo.ID, Todo<string>.ToNumberVersion(todo));
+                response.ClientView.Add(todo.ID, todo.ToTodo());
             }
 
             return Ok(response);
@@ -57,6 +57,6 @@ namespace todo.Controllers
     public class ClientViewResponse
     {
         public UInt64 LastMutationID { get; set; }
-        public Dictionary<String, Todo<UInt64>> ClientView { get; set; }
+        public Dictionary<String, Todo> ClientView { get; set; }
     }
 }

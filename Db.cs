@@ -65,11 +65,6 @@ namespace todo
             return await ExecuteStoredProcedure<UInt64>(accountID, "spGetMutationID", new dynamic[] { accountID, clientID });
         }
 
-        private static String GetReplicacheStateID(String clientID)
-        {
-            return String.Format("/replicache-client-state/{0}", clientID);
-        }
-
         public async Task<T> ExecuteStoredProcedure<T>(string accountID, string spName, dynamic[] args)
         {
             var result = await Items.Scripts.ExecuteStoredProcedureAsync<T>(
