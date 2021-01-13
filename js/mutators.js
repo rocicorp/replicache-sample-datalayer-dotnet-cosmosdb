@@ -1,5 +1,15 @@
 // @ts-check
 
+// All the mutators for the todo sample.
+
+/** @type {{[name: string]: (accountID: string, args: any) => Promise<void>}} */
+const mutators = {
+  __proto__: null,
+  createTodo,
+  updateTodo,
+  deleteTodo,
+};
+
 /**
  * @param {string} accountID
  * @param {Todo} todo

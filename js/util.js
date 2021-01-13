@@ -1,5 +1,9 @@
 // @ts-check
 
+// This file provides wrappers and helpers around CosmosDB's server side
+// JavaScript API. It is far from complete and omits things we do not need for
+// this sample. Use it as inspiration but remember that it is far from complete.
+
 /**
  * Helper to wrap an async function for a stored procedure. If the async
  * function is rejected we abort the stored procedure with the reason. If the

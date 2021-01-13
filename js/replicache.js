@@ -1,5 +1,10 @@
 // @ts-check
 
+// Utility functions needed to support the mutators as well as to the stored
+// procedures.
+// It also has the generic parts of processMutation and the code to select the
+// correct mutator.
+
 /**
  * @param {string} accountID
  * @param {string} clientID
@@ -81,20 +86,13 @@ async function processMutation(accountID, clientID, mutation) {
   /** @type {MutationInfo | null} */
   let info = null;
 
+  const {name, args} = mutation;
   try {
-    switch (mutation.name) {
-      case "createTodo":
-        await createTodo(accountID, mutation.args);
-        break;
-      case "updateTodo":
-        await updateTodo(accountID, mutation.args);
-        break;
-      case "deleteTodo":
-        await deleteTodo(accountID, mutation.args);
-        break;
-      default:
-        throw new PermanentError(`Unknown mutation: ${mutation.name}`);
+    const mutator = mutators[name];
+    if (!mutator) {
+      throw new PermanentError(`Unknown mutation: ${name}`);
     }
+    await mutator(accountID, args);
   } catch (e) {
     if (e instanceof PermanentError) {
       info = {
