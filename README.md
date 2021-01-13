@@ -17,15 +17,50 @@ This is a basic sample of a Replicache backend for .Net/C#/CosmosDB.
 
 # Important!
 
-This sample writes the `ClientState` keys non-atomically with changes to
-entities. This is easier, because CosmosDB's transaction API uses JavaScript,
-which is more involved to get setup. However, this implementation permits an anomaly:
+The sample use stored procedures written in JavaScript since that is required
+for doing [multikey
+transactions](https://docs.microsoft.com/en-us/azure/cosmos-db/database-transactions-optimistic-concurrency#multi-item-transactions).
+This ensures that mutations always occur atomically with the update of
+`LastMutationID`.
 
-It is possible for a client to sync an authoritative version of a change
-without the `LastMutationID` field having yet been updated. This means that
-the client will then replay the pending version of the change atop the
-authoritative version. The result could be anything from a nop to user data
-loss, depending on your application.
+# Demo
 
-For a production application, you would want to use [multikey transactions](https://docs.microsoft.com/en-us/azure/cosmos-db/database-transactions-optimistic-concurrency#multi-item-transactions) to ensure
-that mutations always occur atomically with the update of `LastMutationID`.
+You can modify the [lit-redo
+sample](https://github.com/rocicorp/replicache-sdk-js/tree/master/sample/lit-todo)
+in the [replicache-sdk-js repo](https://github.com/rocicorp/replicache-sdk-js)
+to work with this CosmosDB backend. Here is how:
+
+```sh
+git clone https://github.com/rocicorp/replicache-sdk-js.git
+cd replicache-sdk-js.git
+npm install
+```
+
+Until we have self serve for the client view you need to run the diff-server locally:
+
+```sh
+# in replicache-sdk-js/
+bin/diff-server serve --client-view=https://localhost:5001/replicache-client-view --db=/tmp/diff-server
+```
+
+Now we need to change the sample to use our local diff server and to use the `replicache-client-view` and the `replicache-batch` endpoints.
+
+Modify [sample/lit-todo/main.js](https://github.com/rocicorp/replicache-sdk-js/blob/master/sample/lit-todo/main.js)
+to use `https://localhost:50001/replicache-batch` as the
+[`batchURL`](https://github.com/rocicorp/replicache-sdk-js/blob/932976225b2f09b59fb31e8da1f8f6be9f9edcde/sample/lit-todo/main.js#L38).
+
+and you need to update
+[sample/lit-todo/main.js](https://github.com/rocicorp/replicache-sdk-js/blob/master/sample/lit-todo/main.js)
+to use your local diff-server by changing
+[`diffServerURL`](https://github.com/rocicorp/replicache-sdk-js/blob/932976225b2f09b59fb31e8da1f8f6be9f9edcde/sample/lit-todo/main.js#L30) to `http://localhost:7001/pull`.
+
+Now you need to build lit-redo and start a web server hosting it.
+
+```sh
+# in replicache-sdk-js/sample/lit-redo
+npm install # first time only
+npm run build
+npx http-server .
+```
+
+Don't forget to `dotnet run` as described in [Run](#run).
