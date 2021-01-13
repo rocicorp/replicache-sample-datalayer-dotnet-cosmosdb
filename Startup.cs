@@ -1,5 +1,4 @@
 
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -17,7 +16,7 @@ namespace TodoApi
             Configuration = configuration;
 
             var db = new Db(Configuration);
-            Task.Run(db.RegisterStoredProcedures).Wait();
+            db.RegisterStoredProcedures().Wait();
         }
 
         public IConfiguration Configuration { get; }
