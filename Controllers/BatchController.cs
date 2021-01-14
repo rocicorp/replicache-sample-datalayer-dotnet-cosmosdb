@@ -134,39 +134,4 @@ namespace todo
             };
         }
     }
-
-    // Error handling for a sync protocol is slightly more involved than
-    // a REST API because the client must know whether to retry a
-    // mutation or not.
-    //
-    // Thus Replicache batch endpoints must distinguish between
-    // temporary and permanent errors.
-    //
-    // Temporary errors are things like servers being down. The client
-    // should retry the mutation later, until the needed resource comes
-    // back.
-    //
-    // Permanent errors are things like malformed requests. The client
-    // sent something the server can't ever process. The server marks
-    // the request as handled and moves on.
-    //
-    // Under normal circumstances, permanent errors are *not expected*.
-    // These are effectively programmer errors since the client should
-    // only ever send messages the server can understand.
-    //
-    // Another way to think about it is this:
-    // - say you have no concept of permanent errors
-    // - eventually you write a bug on the client so that it sends a
-    //   message server can't process
-    // - client keeps retrying and you notice it in the logs
-    // - solution is to "accept" the bad message from the client and
-    //   turn it into a nop.
-    // - Permanent errors are just a reification of this pattern.
-    public class PermanentError : Exception
-    {
-        public PermanentError(String message, Exception cause)
-            : base(message, cause)
-        {
-        }
-    }
 }
