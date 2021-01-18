@@ -46,7 +46,7 @@ bin/diff-server serve --client-view=https://localhost:5001/replicache-client-vie
 Now we need to change the sample to use our local diff server and to use the `replicache-client-view` and the `replicache-batch` endpoints.
 
 Modify [sample/lit-todo/main.js](https://github.com/rocicorp/replicache-sdk-js/blob/master/sample/lit-todo/main.js)
-to use `https://localhost:50001/replicache-batch` as the
+to use `https://localhost:5001/replicache-batch` as the
 [`batchURL`](https://github.com/rocicorp/replicache-sdk-js/blob/932976225b2f09b59fb31e8da1f8f6be9f9edcde/sample/lit-todo/main.js#L38).
 
 and you need to update
