@@ -5,7 +5,7 @@ This is a basic sample of a Replicache backend for .Net/C#/CosmosDB.
 # Run
 
 1. Setup a CosmosDB account as [documented here](https://docs.microsoft.com/en-us/azure/cosmos-db/create-sql-api-dotnet-v4).
-1. Create a new database called `replicache-sample-todo` and a container called `items`.
+1. Create a new database called `replicache-sample-todo` and a container called `items`. Set the partion key to `/accountID`.
 1. Run the sample: `dotnet run -- --cosmosEndpoint=<database-url> --cosmosAuthKey=<database-primary-key>`. Get the `database-url` and `database-primary-key` values from the "keys" pane of your CosmosDB dashboard.
 
 # Other Notes
